@@ -7,6 +7,7 @@ class ProgressClock {
         this.el = document.querySelector(qs);
         this.time = 0;
         this.updateTimeOut = null;
+        this.ringTimeOuts = [];
         this.update();
     }
 
@@ -116,10 +117,40 @@ class ProgressClock {
                 }
             ];
 
+            this.ringTimeOuts.forEach (t => {
+                clearTimeout(t);
+            });
+
+            this.ringTimeOuts = [];
             units.forEach( u => {
-                const unit = this.el.querySelector(`
-                    [data-unit = "${u.label}"]
-                `);
+                const ring = this.el.querySelector(`
+                    [data-ring = "${u.label}"]`);
+                
+                if (ring) {
+                    const strokeDashArray = ring.getAttribute("stroke-dasharray");
+                    const fill360 = "progress-clock_fill--360";
+
+                    if (strokeDashArray) {
+                        const circumference = +strokeDashArray.split(" ")[0];
+                        const strokeDashOffsetPct = 1 - u.progress;
+
+                        ring.setAttribute(
+                            "stroke-dashoffset",
+                            strokeDashOffsetPct * circumference
+                        );
+
+                        if (strokeDashOffsetPct === 1) {
+                            ring.classList.add(fill360);
+                            this.ringTimeOuts.push(
+                                setTimeout(() => {
+                                    ring.classList.remove(fill360);
+                                }, 600),
+                            );
+                        }
+                    }
+                }
+
+                const unit = this.el.querySelector (`[data-unit = "${u.label}"]`);
                 if (unit) {
                     unit.innerText = u.value;
                 }
